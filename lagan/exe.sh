@@ -1,5 +1,5 @@
 #!/bin/sh
-# export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=1
 # source activate <Env_name>
 
 dataset=cifar10 # imagenet | cifar10 | svhn
@@ -15,6 +15,7 @@ beta=0
 bsize=128       # 256 for imagenet, 128 for cifar
 fid_freq=10000  # def: 10000; use < 0 to cancel computing it
 model_save_step=${fid_freq}
+seed=1          # type=int, default=1
 
 # OPTIONS (run python main.py --help for full list):
 # --img_size: Default img_size is 32
@@ -22,6 +23,10 @@ model_save_step=${fid_freq}
 # --extra: activates extragradient, otherwise, vanilla GAN is used
 # --momentum <int>:  Type: float; Default: 0; Used if SGD is selected
 # Use `--version test` when testing. If None (default), the options yield the output directory.
+
+#############################################################################################
+echo "Start at $(date +'%F %T')"
+#############################################################################################
 
 # USE:
 python main.py \
@@ -44,6 +49,7 @@ python main.py \
     --lookahead_k 5 `# valid only if lookahead is activated` \
     --lookahead_alpha 0.5 `# valid only if lookahead is activated` \
     --lookahead True `# use True to activate it` \
+    --seed ${seed} \
     # --lookahead_super_slow_k 10000 \
     # --version test
     # --cont
