@@ -57,6 +57,11 @@ def get_parameters():
     parser.add_argument('--lookahead_k_max', type=int, default=1000, help='valid if k<=0')
     parser.add_argument('--lookahead_alpha', type=float, default=.5)
 
+    # fast OGDA
+    parser.add_argument('--fogda', type=str2bool, default=False)
+    parser.add_argument('--fogda_alpha', type=int, default=10)
+    parser.add_argument('--fogda_k', type=int, default=100)
+
     # Path
     parser.add_argument('--image_path', type=str, default=None)
     parser.add_argument('--log_path', type=str, default='./results/<dataset>/<version>/logs')
@@ -94,9 +99,18 @@ def get_parameters():
     parser.add_argument('--fid_stats_path', help='pre-calculated fid stats for the real data')
 
     _args = parser.parse_args()
+
+    if _args.extra and _args.fogda:
+        raise ValueError("Cannot use EG and fOGDA simultaneously.")
+
     if not _args.version:
-        # `extra` or `gan`
-        _args.version = 'extra' if _args.extra else 'gan'
+        # `extra` or `fogda` or `gan`
+        if _args.extra:
+             _args.version = 'extra'
+        elif _args.fogda:
+             _args.version = 'fogda'
+        else:
+             _args.version = 'gan'
         _args.version += '_' + _args.optim
         _args.version += '_' + _args.arch
 
@@ -117,13 +131,19 @@ def get_parameters():
     if _args.lookahead is not None and _args.lookahead is True:
         print('Using lookahead.')
         _args.version += '_{}lookahead{}_ssk{}'.format(_args.lookahead_k,
-                                                       _args.lookahead_alpha, 
+                                                       _args.lookahead_alpha,
                                                        _args.lookahead_super_slow_k)
     else:
         print('Without lookahead.')
 
     if _args.seed != 1:
         _args.version += '_seed{}'.format(_args.seed)
+
+    if _args.fogda:
+        print('Using fOGDA.')
+        _args.version += '/alpha_{}_k_{}'.format(_args.fogda_alpha, _args.fogda_k)
+    else:
+        print('Without fOGDA.')
 
     _args.log_path = _args.log_path.replace("<dataset>", _args.dataset)
     _args.model_save_path = _args.model_save_path.replace("<dataset>", _args.dataset)

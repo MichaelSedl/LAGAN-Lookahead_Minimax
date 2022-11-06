@@ -78,6 +78,11 @@ class Trainer(object):
         self.lookahead_k_max = config.lookahead_k_max
         self.lookahead_alpha = config.lookahead_alpha
 
+        # fOGDA
+        self.fogda = config.fogda
+        self.fogda_alpha = config.fogda_alpha
+        self.fogda_k = config.fogda_k
+
         self.build_model()
 
         # imagenet
@@ -335,7 +340,7 @@ class Trainer(object):
         if d_optim is not None:
             d_optim.zero_grad()
         d_loss.backward()
-        
+
         if d_optim is not None:
             d_optim.step()
             if scheduler_d is not None:
@@ -480,6 +485,14 @@ class Trainer(object):
                 self.d_optimizer_extra = self.d_optimizer
         else:
             raise NotImplementedError('Supported optimizers: SGD, Adam, VRAd')
+
+        if self.fogda:
+            from optim import fogda
+            self.g_optimizer = fogda.fOGDA(self.g_optimizer, alpha=self.fogda_alpha,
+                                           increment_iterator_every=self.fogda_k)
+            self.d_optimizer = fogda.fOGDA(self.d_optimizer, alpha=self.fogda_alpha,
+                                           increment_iterator_every=self.fogda_k)
+
         if self.lookahead:
             from optim import lookahead as la
             self.g_optimizer = la.Lookahead(self.g_optimizer, k=self.lookahead_k,

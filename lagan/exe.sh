@@ -17,6 +17,14 @@ fid_freq=10000  # def: 10000; use < 0 to cancel computing it
 model_save_step=${fid_freq}
 seed=1          # type=int, default=1
 
+# fast OGDA
+fogda_alpha=10 # 5, 10, 100, 1000
+# fogda_k=100
+all_fogda_k="1 10 100 1000"
+
+eg=False
+la=False
+
 # OPTIONS (run python main.py --help for full list):
 # --img_size: Default img_size is 32
 # --cont: continue training, assumes there is a backup sub-directory with timestamp.txt file in it
@@ -29,30 +37,37 @@ echo "Start at $(date +'%F %T')"
 #############################################################################################
 
 # USE:
-python main.py \
-    --dataset ${dataset} --adv_loss hinge \
-    --sample_step 5000 `# freq to store fake samples` \
-    --backup_freq 1000 `# freq to backup the models` \
-    --fid_freq ${fid_freq} \
-    --model_save_step ${model_save_step} \
-    --arch ${arch} \
-    --num_workers 10 \
-    --z_dim 128 \
-    --g_lr ${g_lr} \
-    --d_lr ${d_lr} \
-    --d_iters ${d_iters} \
-    --optim ${optim} `# optimizer`\
-    --batch_size ${bsize} \
-    --extra False \
-    --lr_scheduler ${gamma} \
-    --g_beta1 ${beta} --d_beta1 ${beta} \
-    --lookahead_k 5 `# valid only if lookahead is activated` \
-    --lookahead_alpha 0.5 `# valid only if lookahead is activated` \
-    --lookahead True `# use True to activate it` \
-    --seed ${seed} \
-    # --lookahead_super_slow_k 10000 \
-    # --version test
-    # --cont
+for fogda_k in ${all_fogda_k}
+do
+    python main.py \
+        --dataset ${dataset} --adv_loss hinge \
+        --sample_step 5000 `# freq to store fake samples` \
+        --backup_freq 1000 `# freq to backup the models` \
+        --fid_freq ${fid_freq} \
+        --model_save_step ${model_save_step} \
+        --arch ${arch} \
+        --num_workers 10 \
+        --z_dim 128 \
+        --g_lr ${g_lr} \
+        --d_lr ${d_lr} \
+        --d_iters ${d_iters} \
+        --optim ${optim} `# optimizer`\
+        --batch_size ${bsize} \
+        --extra ${eg} \
+        --lr_scheduler ${gamma} \
+        --g_beta1 ${beta} --d_beta1 ${beta} \
+        --lookahead_k 5 `# valid only if lookahead is activated` \
+        --lookahead_alpha 0.5 `# valid only if lookahead is activated` \
+        --lookahead ${la} `# use True to activate it` \
+        --seed ${seed} \
+        --fogda True \
+        --fogda_alpha ${fogda_alpha} \
+        --fogda_k ${fogda_k} \
+        --total_step 100000
+        # --lookahead_super_slow_k 10000 \
+        # --version test
+        # --cont
+done
 
 #############################################################################################
 echo "End at $(date +'%F %T')"
