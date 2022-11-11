@@ -1,10 +1,13 @@
 import os
+import time
+import datetime
 import ast
 import json
 import torch
 import tensorflow.compat.v1 as tf
 import numpy as np
 import fid
+import inception_score
 import utils
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -102,14 +105,38 @@ class Evaluator(object):
         )
         return fid_score
 
+    def eval_is(self):
+        all_samples = []
+        samples = torch.randn(self.sample_size_fid, self.z_dim)
+        for i in range(0, self.sample_size_fid, 200):
+            samples_100 = samples[i:i+200]
+            samples_100 = samples_100.cuda()
+            all_samples.append(self.G(samples_100).cpu().data.numpy())
+
+        all_samples = np.concatenate(all_samples, axis=0)
+        all_samples = np.multiply(np.add(np.multiply(all_samples, 0.5), 0.5), 255).astype('int32')
+        all_samples = all_samples.reshape((-1, 3, self.imsize, self.imsize)).transpose(0, 2, 3, 1)
+        return inception_score.get_inception_score(list(all_samples))
+
     def eval_metrics(self):
         utils.make_folder(self.metrics_path)
         for m in self.eval_pth:
             jf = os.path.join(self.metrics_path, f"{m}.json")
+            start_time = time.time()
             for pth in self.eval_pth[m]:
                 self.load_gen(m, pth)
+
                 print(f"Evaluating: {m}, {self.iter}")
                 FID = self.eval_fid()
+                FID = float(FID)
+                IS_mean, IS_std = self.eval_is()
+                IS_mean = float(IS_mean)
+                IS_std = float(IS_std)
+
+                elapsed = time.time() - start_time
+                elapsed = str(datetime.timedelta(seconds=elapsed))
+                print(f"\n\nEvaluated: {m}, {self.iter}; Elapsed [{elapsed}]")
+                print(f"FID: {FID:.4f}, IS: {IS_mean:.4f} +- {IS_std:.4f}\n")
                 with open(jf, "a") as fs:
                     s = json.dumps(
                         dict(iter=self.iter, FID=FID, IS_mean=IS_mean, IS_std=IS_std,)
@@ -127,4 +154,7 @@ if __name__ == "__main__":
     # eval_pth = "all"
 
     E = Evaluator(wdir, eval_model, eval_pth)
+#    E.load_gen(eval_model, eval_pth)
+#    print(E.eval_fid())
+#    print(E.eval_is())
     E.eval_metrics()
