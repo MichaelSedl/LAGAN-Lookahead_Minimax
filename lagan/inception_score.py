@@ -10,17 +10,20 @@ import tarfile
 
 import numpy as np
 from six.moves import urllib
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+# import tensorflow as tf
 import glob
 import scipy.misc
 import math
 import sys
 
-MODEL_DIR = '/tmp/imagenet'
+tf.disable_eager_execution()
+
+MODEL_DIR = './precalculated_statistics/inception_score'
 DATA_URL = 'http://download.tensorflow.org/models/image/imagenet/inception-2015-12-05.tgz'
 softmax = None
 
-# Call this function with list of images. Each of elements should be a 
+# Call this function with list of images. Each of elements should be a
 # numpy array with values ranging from 0 to 255.
 def get_inception_score(images, splits=10):
   assert(type(images) == list)
@@ -32,7 +35,7 @@ def get_inception_score(images, splits=10):
   for img in images:
     img = img.astype(np.float32)
     inps.append(np.expand_dims(img, 0))
-  bs = 1
+  bs = 100
   with tf.Session() as sess:
     preds = []
     n_batches = int(math.ceil(float(len(inps)) / float(bs)))
@@ -73,22 +76,24 @@ def _init_inception():
       MODEL_DIR, 'classify_image_graph_def.pb'), 'rb') as f:
     graph_def = tf.GraphDef()
     graph_def.ParseFromString(f.read())
-    _ = tf.import_graph_def(graph_def, name='')
+    # needed to work with arbitrary minibatch size (TF 2)
+    placeholder_ed0 = {"ExpandDims/dim:0": tf.placeholder(dtype=np.int32, shape=(None,))}
+    _ = tf.import_graph_def(graph_def, name='', input_map=placeholder_ed0)
   # Works with an arbitrary minibatch size.
   with tf.Session() as sess:
     pool3 = sess.graph.get_tensor_by_name('pool_3:0')
-    ops = pool3.graph.get_operations()
-    for op_idx, op in enumerate(ops):
-        for o in op.outputs:
-            shape = o.get_shape()
-            shape = [s.value for s in shape]
-            new_shape = []
-            for j, s in enumerate(shape):
-                if s == 1 and j == 0:
-                    new_shape.append(None)
-                else:
-                    new_shape.append(s)
-            o.set_shape(tf.TensorShape(new_shape))
+#    ops = pool3.graph.get_operations()
+#    for op_idx, op in enumerate(ops):
+#        for o in op.outputs:
+#            shape = o.get_shape()
+#            # shape = [s.value for s in shape]
+#            new_shape = []
+#            for j, s in enumerate(shape):
+#                if s == 1 and j == 0:
+#                    new_shape.append(None)
+#                else:
+#                    new_shape.append(s)
+#            o.set_shape(tf.TensorShape(new_shape))
     w = sess.graph.get_operation_by_name("softmax/logits/MatMul").inputs[1]
     logits = tf.matmul(tf.squeeze(pool3, [1, 2]), w)
     softmax = tf.nn.softmax(logits)
