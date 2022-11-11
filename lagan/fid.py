@@ -53,21 +53,21 @@ def _get_inception_layer(sess):
     # layername = 'FID_Inception_Net/pool_3:0'  # [layername = 'pool_3:0']
     layername = 'pool_3:0'
     pool3 = sess.graph.get_tensor_by_name(layername)
-    ops = pool3.graph.get_operations()
-    for op_idx, op in enumerate(ops):
-        for o in op.outputs:
-            shape = o.get_shape()
-            if shape._dims != []:  # [if shape._dims is not None:]
-                # [shape = [s.value for s in shape]]
-                new_shape = []
-                for j, s in enumerate(shape):
-                    if s == 1 and j == 0:
-                        new_shape.append(None)
-                    else:
-                        new_shape.append(s)
-                # [o._shape = tf.TensorShape(new_shape)]
-                # [o.set_shape(tf.TensorShape(new_shape))]
-                o.__dict__['_shape_val'] = tf.TensorShape(new_shape)
+#    ops = pool3.graph.get_operations()
+#    for op_idx, op in enumerate(ops):
+#        for o in op.outputs:
+#            shape = o.get_shape()
+#            if shape._dims != []:  # [if shape._dims is not None:]
+#                # [shape = [s.value for s in shape]]
+#                new_shape = []
+#                for j, s in enumerate(shape):
+#                    if s == 1 and j == 0:
+#                        new_shape.append(None)
+#                    else:
+#                        new_shape.append(s)
+#                # [o._shape = tf.TensorShape(new_shape)]
+#                # [o.set_shape(tf.TensorShape(new_shape))]
+#                o.__dict__['_shape_val'] = tf.TensorShape(new_shape)
     return pool3
 
 
@@ -113,7 +113,7 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
     The Frechet distance between two multivariate Gaussians X_1 ~ N(mu_1, C_1)
     and X_2 ~ N(mu_2, C_2) is
             d^2 = ||mu_1 - mu_2||^2 + Tr(C_1 + C_2 - 2*sqrt(C_1*C_2)).
-            
+
     Stable version by Dougal J. Sutherland.
 
     Params:
