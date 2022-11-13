@@ -9,6 +9,7 @@ import numpy as np
 import fid
 import inception_score
 import utils
+from collections import defaultdict
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
@@ -27,7 +28,7 @@ class Evaluator(object):
                 self.eval_model.remove("gen_ema_slow")
             except ValueError:
                 pass
-        self.eval_pth = {}
+        self.eval_pth = defaultdict(list)
         for m in self.eval_model:
             if eval_pth == "all":
                 self.eval_pth[m] = sorted(
@@ -118,10 +119,22 @@ class Evaluator(object):
         all_samples = all_samples.reshape((-1, 3, self.imsize, self.imsize)).transpose(0, 2, 3, 1)
         return inception_score.get_inception_score(list(all_samples))
 
-    def eval_metrics(self):
+    def eval_metrics(self, continue_evaluation=False):
         utils.make_folder(self.metrics_path)
+        if continue_evaluation:
+            for mjsonl in os.listdir(self.metrics_path):
+                evaluated_iter = []
+                with open(os.path.join(self.metrics_path, mjsonl)) as f:
+                    for ln in f:
+                        evaluated_iter.append(json.loads(ln)["iter"])
+                evaluated_iter = sorted(np.unique(evaluated_iter))
+                evaluated_pth = [f"iter{ev_it:08d}.pth" for ev_it in evaluated_iter]
+                m = mjsonl.replace(".jsonl", "")
+                remaining_pth = [pth for pth in self.eval_pth[m] if pth not in evaluated_pth]
+                self.eval_pth[m] = remaining_pth
+
         for m in self.eval_pth:
-            jf = os.path.join(self.metrics_path, f"{m}.json")
+            jf = os.path.join(self.metrics_path, f"{m}.jsonl")
             start_time = time.time()
             for pth in self.eval_pth[m]:
                 self.load_gen(m, pth)
