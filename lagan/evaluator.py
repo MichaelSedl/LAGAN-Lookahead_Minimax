@@ -138,17 +138,20 @@ class Evaluator(object):
             start_time = time.time()
             for pth in self.eval_pth[m]:
                 self.load_gen(m, pth)
-
                 print(f"Evaluating: {m}, {self.iter}")
+
                 FID = self.eval_fid()
                 FID = float(FID)
+                elapsed = time.time() - start_time
+                elapsed = str(datetime.timedelta(seconds=elapsed))
+                print(f"FID evaluated: {m}, {self.iter}; Elapsed [{elapsed}]")
+
                 IS_mean, IS_std = self.eval_is()
                 IS_mean = float(IS_mean)
                 IS_std = float(IS_std)
-
                 elapsed = time.time() - start_time
                 elapsed = str(datetime.timedelta(seconds=elapsed))
-                print(f"\n\nEvaluated: {m}, {self.iter}; Elapsed [{elapsed}]")
+                print(f"\nIS evaluated: {m}, {self.iter}; Elapsed [{elapsed}]")
                 print(f"FID: {FID:.4f}, IS: {IS_mean:.4f} +- {IS_std:.4f}\n")
                 with open(jf, "a") as fs:
                     s = json.dumps(
