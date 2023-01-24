@@ -74,7 +74,7 @@ class Evaluator(object):
         fid.create_inception_graph(
             _INCEPTION_PTH
         )  # load the graph into the current TF graph
-        _gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.4)
+        _gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.23)
         # _gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.4)
         self.fid_session = tf.Session(config=tf.ConfigProto(gpu_options=_gpu_options))
         print("Loading real data FID stats from: {}".format(self.fid_stats_path))

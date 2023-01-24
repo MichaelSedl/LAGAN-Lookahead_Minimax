@@ -160,7 +160,7 @@ def get_parameters():
     _args.metrics_path = _args.metrics_path.replace("<version>", _args.version)
 
     if _args.dataset != 'imagenet':
-        if _args.fid_freq > 0 and not _args.fid_stats_path:
+        if not _args.fid_stats_path:
             if 'cifar10' in _args.dataset:
                 _args.fid_stats_path = 'precalculated_statistics/fid_stats_cifar10_train.npz'
             elif 'celeba' in _args.dataset:
